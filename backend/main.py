@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
 from backend.database import engine, Base
-from backend.routers import todos
+from backend.routers import todos, repetition
 
 app = FastAPI()
 
@@ -14,3 +14,4 @@ async def health_check():
 
 
 app.include_router(todos.router)
+app.include_router(repetition.router)

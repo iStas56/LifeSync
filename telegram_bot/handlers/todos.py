@@ -3,27 +3,16 @@ import httpx
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from telegram_bot.handlers.menu import process_start_command
+from telegram_bot.handlers.handler_dispatcher import process_start_command, extract_source_info, get_cancel_keyboard
 from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message)
 from telegram_bot.logger import logger, log_user_action
 
 router = Router()
 
 
-@router.callback_query(lambda c: c.data == 'start')
-async def return_to_start(callback_query: types.CallbackQuery):
-    await process_start_command(callback_query.message)
-
-
-@router.callback_query(lambda c: c.data and c.data.startswith('todos'))
+@router.callback_query(lambda c: c.data == 'todos')
 async def show_todos(source):
-    if isinstance(source, types.CallbackQuery):
-        user_id = source.from_user.id
-        message = source.message
-        await source.answer()  # Для CallbackQuery
-    elif isinstance(source, types.Message):
-        user_id = source.from_user.id
-        message = source
+    user_id, message = await extract_source_info(source)
 
     async with httpx.AsyncClient() as client:
         # Пример запроса, замените на ваш фактический запрос
@@ -44,10 +33,11 @@ async def show_todos(source):
     # Добавляем кнопки действий в отдельный ряд
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=task_buttons + [[back_button, new_task_button]])
 
-    if isinstance(source, types.CallbackQuery):
-        await message.edit_text("Текущий список задач:", reply_markup=keyboard)
-    elif isinstance(source, types.Message):
-        await message.answer("Текущий список задач:", reply_markup=keyboard)
+    if message:
+        text = "Текущий список задач:"
+        await message.edit_text(text, reply_markup=keyboard) \
+            if isinstance(source, types.CallbackQuery) \
+            else await message.answer(text, reply_markup=keyboard)
 
 
 @router.callback_query(lambda c: c.data and c.data.startswith('todo_detail_'))
@@ -66,10 +56,8 @@ async def show_todo_details(callback_query: types.CallbackQuery):
     complete_button = types.InlineKeyboardButton(text="Изменить статус", callback_data=f"todo_update_{todo['id']}")
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[remove_button, complete_button], [back_button]])
 
-    message_text = (
-        f"<b>Задача</b>: {todo['title']}\n\n"
-        f"<b>Описание</b>: {todo['description']}"
-    )
+    message_text = (f"━━━━━━━━━━━━━━━━━\n "
+                    f"🎯 {todo['title']} 🎯\n\n 📝 {todo['description']} \n━━━━━━━━━━━━━━━━━")
 
     await callback_query.message.answer(message_text, reply_markup=keyboard, parse_mode="HTML")
 
@@ -102,24 +90,11 @@ class TodoCreation(StatesGroup):
     waiting_for_priority = State()
 
 
-def get_cancel_keyboard():
-    cancel_button = InlineKeyboardButton(text="❌ остановить добавление задачи", callback_data="cancel")
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[cancel_button]])
-    return keyboard
-
-
-@router.callback_query(F.data == "cancel")
-async def process_cancel(callback_query: CallbackQuery, state: FSMContext):
-    await state.clear()  # Сброс состояния
-    await callback_query.message.edit_text("Добавление задачи отменено.")
-    await callback_query.answer()
-
-
 # Логика добавления новой задачи
 @router.callback_query(lambda c: c.data and c.data.startswith('new_todo'))
 async def new_todo_start(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.message.answer(
-        "Введите название задачи:",
+        "✏️ Введите название задачи ✏️",
         reply_markup=get_cancel_keyboard()
     )
     await state.set_state(TodoCreation.waiting_for_title)
@@ -131,12 +106,12 @@ async def process_title_sent(message: Message, state: FSMContext):
 
     title = message.text.strip()
     if len(message.text.strip()) < 2:
-        await message.answer("Название должно содержать минимум 2 символа. Пожалуйста, попробуйте снова:")
+        await message.answer("⚠️ Название должно содержать минимум 2 символа. Пожалуйста, попробуйте снова ⚠️")
         return
 
     await state.update_data(title=title)
     await message.answer(
-        "Введите описание задачи:",
+        "✏️ Введите описание задачи: ✏️",
         reply_markup=get_cancel_keyboard()
     )
 
@@ -149,12 +124,12 @@ async def process_description_sent(message: Message, state: FSMContext):
 
     description = message.text.strip()
     if len(message.text.strip()) < 2:
-        await message.answer("Описание должно содержать минимум 2 символа. Пожалуйста, попробуйте снова:")
+        await message.answer("⚠️ Описание должно содержать минимум 2 символа. Пожалуйста, попробуйте снова ⚠️")
         return
 
     await state.update_data(description=description)
     await message.answer(
-        "Введите приоритет от 1 до 5:",
+        "🔢 Введите приоритет от 1 до 5: 🔢",
         reply_markup=get_cancel_keyboard()
     )
 
@@ -167,7 +142,7 @@ async def process_priority_sent(message: types.Message, state: FSMContext):
 
     priority_text = message.text.strip()
     if not priority_text.isdigit() or not 1 <= int(priority_text) <= 5:
-        await message.answer("Приоритет должен быть числом от 1 до 5. Попробуйте ещё раз:")
+        await message.answer("⚠️ Приоритет должен быть числом от 1 до 5. Попробуйте ещё раз ⚠️")
         return
 
     priority = priority_text
@@ -185,10 +160,11 @@ async def process_priority_sent(message: types.Message, state: FSMContext):
 
     # Попытка добавить новую задачу через API
     if await add_new_task(task_data):
-        await message.answer(text='Задача добавлена!')
+        await message.answer(text='Задача добавлена! ✅')
         await show_todos(message)
     else:
-        await message.answer(text='Произошла ошибка при добавлении задачи.')
+        await message.answer(text='Произошла ошибка при добавлении задачи ❌')
+        await show_todos(message)
 
     await state.clear()
 

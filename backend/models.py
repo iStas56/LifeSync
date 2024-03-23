@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from backend.database import Base
 
 
@@ -12,3 +12,12 @@ class Todos(Base):
     priority = Column(Integer)
     complete = Column(Boolean, default=False)
 
+
+class UserWord(Base):
+    __tablename__ = 'user_words'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)
+    word = Column(String, nullable=False)
+    translation = Column(String, nullable=False)
+    interval = Column(Integer, nullable=True)
+    reminder_date = Column(DateTime)
