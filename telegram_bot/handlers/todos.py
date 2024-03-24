@@ -3,7 +3,8 @@ import httpx
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from telegram_bot.handlers.handler_dispatcher import process_start_command, extract_source_info, get_cancel_keyboard
+from telegram_bot.handlers.handler_dispatcher import process_start_command, extract_source_info, get_cancel_keyboard, \
+    get_back_button
 from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message)
 from telegram_bot.logger import logger, log_user_action
 
@@ -27,14 +28,14 @@ async def show_todos(source):
         for todo in todos
     ]
 
-    back_button = types.InlineKeyboardButton(text="🔙 Назад", callback_data="start")
+    back_button = get_back_button()
     new_task_button = types.InlineKeyboardButton(text="➕ Новая задача", callback_data="new_todo")
 
     # Добавляем кнопки действий в отдельный ряд
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=task_buttons + [[back_button, new_task_button]])
 
     if message:
-        text = "Текущий список задач:"
+        text = "📝 Текущий список задач 📝"
         await message.edit_text(text, reply_markup=keyboard) \
             if isinstance(source, types.CallbackQuery) \
             else await message.answer(text, reply_markup=keyboard)
@@ -51,7 +52,7 @@ async def show_todo_details(callback_query: types.CallbackQuery):
         else:
             await callback_query.answer("Задача не найдена", show_alert=True)
 
-    back_button = types.InlineKeyboardButton(text="🔙 Назад", callback_data="todos")
+    back_button = get_back_button()
     remove_button = types.InlineKeyboardButton(text="❌ Удалить", callback_data=f"todo_remove_{todo['id']}")
     complete_button = types.InlineKeyboardButton(text="Изменить статус", callback_data=f"todo_update_{todo['id']}")
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[remove_button, complete_button], [back_button]])

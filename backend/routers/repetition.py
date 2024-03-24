@@ -49,7 +49,7 @@ async def get_word(db: db_dependency):
             db.delete(word_model)
             db.commit()
 
-            response["message"] = "This was the last repetition. The word has been deleted."
+            response["message"] = "Это было последнее повторение, слово будет удалено!"
             return response
         else:
             # Находим следующий интервал для повторения

@@ -3,6 +3,12 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, \
     CallbackQuery
+import os
+from dotenv import load_dotenv
+from telegram_bot.logger import logger
+
+load_dotenv()
+
 
 router = Router()
 
@@ -27,15 +33,34 @@ async def process_start_command(message: Message):
 
 
 def get_repetition_keyboard():
-    back_button = types.InlineKeyboardButton(text="🔙 Назад", callback_data="start")
+    back_button = get_back_button()
     new_word_button = types.InlineKeyboardButton(text="➕ Новое слово", callback_data="new_word")
     repeat_words_button = types.InlineKeyboardButton(text="🔄 Повторить слова", callback_data="repeat_word")
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[repeat_words_button], [new_word_button], [back_button]])
     return keyboard
 
 
+def get_rates_keyboard(user_id):
+    back_button = get_back_button()
+    convert_button = types.InlineKeyboardButton(text="💹 Узнать курс", callback_data="get_rates")
+
+    keyboard_buttons = [[convert_button], [back_button]]
+
+    # Если пользователь является администратором, добавляем кнопку обновления курсов валют
+    if user_id == int(os.getenv('ADMIN_USER_ID')):
+        update_rates_button = types.InlineKeyboardButton(text="🔄 Обновить курсы валют", callback_data="update_rates")
+        keyboard_buttons.insert(0, [update_rates_button])
+
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+    return keyboard
+
+
+def get_back_button():
+    return types.InlineKeyboardButton(text="🔙 Назад", callback_data="start")
+
+
 def get_cancel_keyboard():
-    cancel_button = InlineKeyboardButton(text="❌ Остановить добавление ❌", callback_data="cancel")
+    cancel_button = InlineKeyboardButton(text="❌ Отменить ❌", callback_data="cancel")
     keyboard = InlineKeyboardMarkup(inline_keyboard=[[cancel_button]])
     return keyboard
 
@@ -43,7 +68,7 @@ def get_cancel_keyboard():
 @router.callback_query(F.data == "cancel")
 async def process_cancel(callback_query: CallbackQuery, state: FSMContext):
     await state.clear()  # Сброс состояния
-    await callback_query.message.edit_text("🚫 Добавление отменено 🚫")
+    await callback_query.message.edit_text("🚫 Отменено 🚫")
     await callback_query.answer()
 
 

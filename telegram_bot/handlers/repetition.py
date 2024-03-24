@@ -1,10 +1,6 @@
-from aiogram import types, Router, F
 import httpx
 from aiogram.filters import StateFilter
-from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import CallbackQuery, Message
-
 from telegram_bot.handlers.handler_dispatcher import *
 from telegram_bot.logger import logger, log_user_action
 
@@ -126,7 +122,6 @@ async def process_translate_sent(message: types.Message, state: FSMContext):
 
 
 async def add_new_word(word_data):
-    logger.info(word_data)
     async with httpx.AsyncClient() as client:
         response = await client.post(f"http://0.0.0.0:8000/word/", json=word_data)
         return response.status_code == 201

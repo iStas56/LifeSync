@@ -3,6 +3,8 @@ services:
   web:
     build: .
     command: uvicorn backend.main:app --host 0.0.0.0 --reload
+    env_file:
+      - .env
     volumes:
       - .:/app
     ports:
@@ -22,6 +24,8 @@ services:
   telegram_bot:
     build: .
     # command: python -m telegram_bot.main TODO после отладки бота раскомментировать
+    env_file:
+      - .env
     volumes:
       - .:/app
     depends_on:

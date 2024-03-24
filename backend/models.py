@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, Float
 from backend.database import Base
 
 
@@ -21,3 +21,19 @@ class UserWord(Base):
     translation = Column(String, nullable=False)
     interval = Column(Integer, nullable=True)
     reminder_date = Column(DateTime)
+
+
+class Rates(Base):
+    __tablename__ = 'rates'
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, nullable=False)
+    title = Column(String, nullable=False)
+    rate = Column(Float, nullable=False)
+    created_at = Column(DateTime)
+
+
+class Currency(Base):
+    __tablename__ = 'currency'
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String, nullable=False)
+    title = Column(String, nullable=False)
