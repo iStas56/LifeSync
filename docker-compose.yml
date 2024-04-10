@@ -23,7 +23,7 @@ services:
       - "${DB_PORT}:5432"
   telegram_bot:
     build: .
-    # command: python -m telegram_bot.main TODO после отладки бота раскомментировать
+    command: python -m telegram_bot.main
     env_file:
       - .env
     volumes:

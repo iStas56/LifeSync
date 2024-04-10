@@ -2,7 +2,7 @@ import asyncio
 
 from aiogram import Bot, Dispatcher
 from telegram_bot.config import Config, load_config
-from telegram_bot.handlers import handler_dispatcher, todos, repetition, rates
+from telegram_bot.handlers import handler_dispatcher, todos, repetition, rates, workouts
 
 
 # Функция конфигурирования и запуска бота
@@ -19,6 +19,7 @@ async def main():
     dp.include_router(todos.router)
     dp.include_router(repetition.router)
     dp.include_router(rates.router)
+    dp.include_router(workouts.router)
 
     # Пропускаем накопившиеся апдейты и запускаем polling
     await bot.delete_webhook(drop_pending_updates=True)

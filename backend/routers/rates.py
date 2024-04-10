@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from typing import Annotated
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal
-from backend.models import UserWord, Currency, Rates
+from backend.models import Currency, Rates
 from starlette import status
 from pydantic import BaseModel, Field
 import os

@@ -9,7 +9,6 @@ from telegram_bot.logger import logger
 
 load_dotenv()
 
-
 router = Router()
 
 
@@ -24,10 +23,11 @@ async def process_start_command(message: Message):
     button_todos = InlineKeyboardButton(text='📋 Список дел', callback_data='todos')
     button_repetition = InlineKeyboardButton(text='🧠 Интервальное повторение', callback_data='words')
     button_rates = InlineKeyboardButton(text='💱 Конвертация валют', callback_data='rates')
-    button_trainings = InlineKeyboardButton(text='🏋️ Менеджер тренировок', callback_data='trainings')
+    button_workouts = InlineKeyboardButton(text='🏋️ Менеджер тренировок', callback_data='workouts')
 
     # Создаем объект инлайн-клавиатуры и добавляем в него кнопки
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[button_todos], [button_repetition], [button_rates], [button_trainings]])
+    keyboard = InlineKeyboardMarkup(
+        inline_keyboard=[[button_todos], [button_repetition], [button_rates], [button_workouts]])
 
     await message.answer(text='🇲 🇪 🇳 🇺', reply_markup=keyboard)
 
@@ -53,6 +53,23 @@ def get_rates_keyboard(user_id):
 
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
     return keyboard
+
+
+def get_workouts_keyboard():
+    text = ("🏋️ Менеджер тренировок 🏋️\n\n"
+            "📌 Тут можно задать параметры тела для мониторинга изменений 📌\n"
+            "📓 Вести дневник тренировок (количество подходов, вес, название упражнения) 📓\n"
+            "📊 Получить данные прошедших тренировок 📊")
+
+    back_button = get_back_button()
+    measurements_button = types.InlineKeyboardButton(text="📏 Параметры тела", callback_data="measurements")
+    add_exercise_button = types.InlineKeyboardButton(text="➕ Добавить тренировку", callback_data="add_exercise")
+    show_exercises_button = types.InlineKeyboardButton(text="👀 Посмотреть тренировки", callback_data="show_exercises")
+
+    keyboard_buttons = [[measurements_button, add_exercise_button], [show_exercises_button], [back_button]]
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=keyboard_buttons)
+
+    return {'text': text, 'keyboard': keyboard}
 
 
 def get_back_button():

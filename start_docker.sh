@@ -4,4 +4,4 @@ echo "Запускаем докер машину..."
 colima start
 
 echo "Запускаем контейнеры..."
-docker-compose up -d
+docker-compose up

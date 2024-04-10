@@ -37,3 +37,28 @@ class Currency(Base):
     id = Column(Integer, primary_key=True, index=True)
     code = Column(String, nullable=False)
     title = Column(String, nullable=False)
+
+
+class WorkoutRecord(Base):
+    __tablename__ = 'workout_record'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)
+    exercise_name = Column(String, nullable=False)
+    sets = Column(Integer, nullable=False)
+    repetitions = Column(Integer, nullable=False)
+    weight = Column(Integer, nullable=True)
+    workout_date = Column(DateTime)
+
+
+class BodyMeasurements(Base):
+    __tablename__ = 'body_measurements'
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, nullable=False)
+    hips = Column(Float, nullable=True)  # Обхват бедра в сантиметрах
+    chest = Column(Float, nullable=True)  # Обхват груди в сантиметрах
+    biceps = Column(Float, nullable=True)
+    waist = Column(Float, nullable=True)
+    biceps_tense = Column(Float, nullable=True)
+    thighs = Column(Float, nullable=True)  # Обхват бедер в сантиметрах
+    calf = Column(Float, nullable=True)  # Обхват икры в сантиметрах
+    weight = Column(Float, nullable=True)

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Отчет по тренировкам</title>
+    <style>
+        table {
+            width: 100%;
+            table-layout: fixed; /* Добавлено для фиксирования ширины таблицы */
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            overflow: hidden; /* Добавлено для предотвращения выхода текста за пределы ячейки */
+            word-wrap: break-word; /* Перенос слов внутри ячейки */
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        /* Явное задание ширин для колонок */
+        th:nth-child(1), td:nth-child(1) { width: 50%; } /* Упражнение */
+        th:nth-child(2), td:nth-child(2) { width: 16.66%; } /* Подходы */
+        th:nth-child(3), td:nth-child(3) { width: 16.66%; } /* Повторения */
+        th:nth-child(4), td:nth-child(4) { width: 16.66%; } /* Вес */
+    </style>
+</head>
+<body>
+    <h1>Отчет по тренировкам</h1>
+    {% for date, workouts in workouts_by_date.items() %}
+        <h2>Дата: {{ date }}</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Упражнение</th>
+                    <th>Подходы</th>
+                    <th>Повторения</th>
+                    <th>Вес</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for workout in workouts %}
+                    <tr>
+                        <td>{{ workout.exercise_name }}</td>
+                        <td>{{ workout.sets }}</td>
+                        <td>{{ workout.repetitions }}</td>
+                        <td>{{ workout.weight }} кг</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endfor %}
+</body>
+</html>

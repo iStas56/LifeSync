@@ -22,7 +22,7 @@ async def rates_page(source):
             formatted_date = last_update_datetime.strftime("%d-%m-%Y")
 
     if message:
-        text = ("━━━━━━━━━━━━━━━━━━━\n 📚 Конвертация валют 📚\n━━━━━━━━━━━━━━━━━━━\n"
+        text = ("━━━━━━━━━━━━━━━━━\n 📚 Конвертация валют 📚\n━━━━━━━━━━━━━━━━━\n"
                 f"🕒 Курсы актуальны на 📅 {formatted_date} 🚀")
         await message.edit_text(text, reply_markup=keyboard) \
             if isinstance(source, types.CallbackQuery) \
@@ -116,8 +116,8 @@ async def process_sum_sent(message: types.Message, state: FSMContext):
     result = await convert_rate(rate_data)
     res_sum = float("{:.2f}".format(result['result']))
     if res_sum > 0:
-        await message.answer(text=f"━━━━━━━━━━━━━━━━━━━\n{res_sum} {current_state['target']}\n"
-                                  f"━━━━━━━━━━━━━━━━━━━\n", reply_markup=get_rates_keyboard(user_id))
+        await message.answer(text=f"━━━━━━━━━━━━━━━━━\n{res_sum} {current_state['target']}\n"
+                                  f"━━━━━━━━━━━━━━━━━\n", reply_markup=get_rates_keyboard(user_id))
     else:
         await message.answer(text='Произошла ошибка при конвертации ❌', reply_markup=get_rates_keyboard(user_id))
     await state.clear()

@@ -16,7 +16,6 @@ async def show_todos(source):
     user_id, message = await extract_source_info(source)
 
     async with httpx.AsyncClient() as client:
-        # Пример запроса, замените на ваш фактический запрос
         response = await client.get(f"http://0.0.0.0:8000/todos/", params={"user_id": user_id})
         if response.status_code == 200:
             todos = response.json()
@@ -31,7 +30,6 @@ async def show_todos(source):
     back_button = get_back_button()
     new_task_button = types.InlineKeyboardButton(text="➕ Новая задача", callback_data="new_todo")
 
-    # Добавляем кнопки действий в отдельный ряд
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=task_buttons + [[back_button, new_task_button]])
 
     if message:
@@ -139,7 +137,6 @@ async def process_description_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(TodoCreation.waiting_for_priority))
 async def process_priority_sent(message: types.Message, state: FSMContext):
-    await log_user_action(message, state)
 
     priority_text = message.text.strip()
     if not priority_text.isdigit() or not 1 <= int(priority_text) <= 5:

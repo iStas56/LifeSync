@@ -10,4 +10,4 @@ echo "Удаляем неиспользуемые и подвешенные об
 docker image prune -f
 
 echo "Запускаем контейнеры..."
-docker-compose up -d
+docker-compose up
