@@ -14,9 +14,9 @@ router = Router()
 @router.callback_query(lambda c: c.data == 'todos')
 async def show_todos(source):
     user_id, message = await extract_source_info(source)
-
+    logger.info(user_id)
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://0.0.0.0:8000/todos/", params={"user_id": user_id})
+        response = await client.get(f"http://web:8000/todos/", params={"user_id": user_id})
         if response.status_code == 200:
             todos = response.json()
         else:
@@ -44,7 +44,7 @@ async def show_todo_details(callback_query: types.CallbackQuery):
     todo_id = callback_query.data.split('_')[2]
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://0.0.0.0:8000/todos/todo/{todo_id}")
+        response = await client.get(f"http://web:8000/todos/todo/{todo_id}")
         if response.status_code == 200:
             todo = response.json()
         else:
@@ -66,7 +66,7 @@ async def remove_todo(callback_query: types.CallbackQuery):
     todo_id = callback_query.data.split('_')[2]
 
     async with httpx.AsyncClient() as client:
-        response = await client.delete(f"http://0.0.0.0:8000/todos/todo/{todo_id}")
+        response = await client.delete(f"http://web:8000/todos/todo/{todo_id}")
         if response.status_code == 204:
             await callback_query.message.edit_text("Задача успешно удалена ✅")
             await show_todos(callback_query)
@@ -77,7 +77,7 @@ async def update_todo(callback_query: types.CallbackQuery):
     todo_id = callback_query.data.split('_')[2]
 
     async with httpx.AsyncClient() as client:
-        response = await client.put(f"http://0.0.0.0:8000/todos/todo/{todo_id}")
+        response = await client.put(f"http://web:8000/todos/todo/{todo_id}")
         if response.status_code == 204:
             await callback_query.answer()
             await show_todos(callback_query)
@@ -101,7 +101,6 @@ async def new_todo_start(callback_query: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(TodoCreation.waiting_for_title))
 async def process_title_sent(message: Message, state: FSMContext):
-    await log_user_action(message, state)
 
     title = message.text.strip()
     if len(message.text.strip()) < 2:
@@ -119,7 +118,6 @@ async def process_title_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(TodoCreation.waiting_for_description))
 async def process_description_sent(message: Message, state: FSMContext):
-    await log_user_action(message, state)
 
     description = message.text.strip()
     if len(message.text.strip()) < 2:
@@ -169,7 +167,7 @@ async def process_priority_sent(message: types.Message, state: FSMContext):
 
 async def add_new_task(task_data):
     async with httpx.AsyncClient() as client:
-        response = await client.post(f"http://0.0.0.0:8000/todos/todo", json=task_data)
+        response = await client.post(f"http://web:8000/todos/todo", json=task_data)
         return response.status_code == 201
 
 

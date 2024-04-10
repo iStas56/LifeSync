@@ -26,7 +26,7 @@ async def words_page(source):
 @router.callback_query(lambda c: c.data == 'repeat_word')
 async def get_word(callback_query: types.CallbackQuery):
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://0.0.0.0:8000/word/")
+        response = await client.get(f"http://web:8000/word/")
         if response.status_code == 200:
             data = response.json()
             if data['success']:
@@ -77,7 +77,6 @@ async def new_word_start(callback_query: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(WordCreation.waiting_for_word))
 async def process_word_sent(message: Message, state: FSMContext):
-    await log_user_action(message, state)
 
     word = message.text.strip()
     if len(message.text.strip()) < 2:
@@ -95,7 +94,6 @@ async def process_word_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(WordCreation.waiting_for_translate))
 async def process_translate_sent(message: types.Message, state: FSMContext):
-    await log_user_action(message, state)
 
     translate = message.text.strip()
     if len(message.text.strip()) < 2:
@@ -123,5 +121,5 @@ async def process_translate_sent(message: types.Message, state: FSMContext):
 
 async def add_new_word(word_data):
     async with httpx.AsyncClient() as client:
-        response = await client.post(f"http://0.0.0.0:8000/word/", json=word_data)
+        response = await client.post(f"http://web:8000/word/", json=word_data)
         return response.status_code == 201

@@ -37,7 +37,7 @@ param_names = {
 async def get_body_measurements_buttons(user_id: int) -> Union[
     dict[str, Union[InlineKeyboardMarkup, str]], InlineKeyboardMarkup]:
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://0.0.0.0:8000/workout/measure", params={"user_id": user_id})
+        response = await client.get(f"http://web:8000/workout/measure", params={"user_id": user_id})
         if response.status_code == 200 and response.json():
             measurements = response.json()
             measurements_id = measurements.get('id')
@@ -143,7 +143,7 @@ async def process_param_sent(message: types.Message, state: FSMContext):
 
 async def update_measurements_param(data):
     async with httpx.AsyncClient() as client:
-        response = await client.put(f"http://0.0.0.0:8000/workout/measure/{data['id']}",
+        response = await client.put(f"http://web:8000/workout/measure/{data['id']}",
                                     json={data['code']: data['value']})
         return response.status_code == 201
 
@@ -212,7 +212,7 @@ async def receive_measurement_input(message: types.Message, state: FSMContext):
 
 async def add_measurements_param(data, user_id):
     async with httpx.AsyncClient() as client:
-        response = await client.post(f"http://0.0.0.0:8000/workout/measure", params={"user_id": user_id},
+        response = await client.post(f"http://web:8000/workout/measure", params={"user_id": user_id},
                                      json=data)
         return response.status_code == 201
 
@@ -243,7 +243,6 @@ async def start_adding_exercise(callback_query: types.CallbackQuery, state: FSMC
 
 @router.message(StateFilter(ExerciseInput.waiting_for_title))
 async def process_title_sent(message: Message, state: FSMContext):
-    await log_user_action(message, state)
 
     title = message.text.strip()
     if len(message.text.strip()) < 2:
@@ -262,7 +261,6 @@ async def process_title_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(ExerciseInput.waiting_for_sets))
 async def process_sets_sent(message: Message, state: FSMContext):
-    await log_user_action(message, state)
 
     sets = message.text.strip()
     if not sets.isdigit() or int(sets) <= 0:
@@ -280,7 +278,6 @@ async def process_sets_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(ExerciseInput.waiting_for_repetitions))
 async def process_repetitions_sent(message: Message, state: FSMContext):
-    await log_user_action(message, state)
 
     repetitions = message.text.strip()
     if not repetitions.isdigit() or int(repetitions) <= 0:
@@ -360,7 +357,7 @@ async def process_date_sent(message: types.Message, state: FSMContext):
 async def add_exercise(data, user_id):
     logger.info(data)
     async with httpx.AsyncClient() as client:
-        response = await client.post(f"http://0.0.0.0:8000/workout/", params={'user_id': user_id},
+        response = await client.post(f"http://web:8000/workout/", params={'user_id': user_id},
                                      json=data)
         return response.status_code == 201
 
@@ -480,7 +477,7 @@ async def get_workouts_by_filter(user_id, filter, type, obj):
 
     headers = {'Accept': 'application/pdf'}
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://0.0.0.0:8000/workout/", params=params, headers=headers)
+        response = await client.get(f"http://web:8000/workout/", params=params, headers=headers)
         if response.status_code == 200 and response.headers['Content-Type'] == 'application/pdf':
             # Получаем содержимое ответа как PDF файл
             pdf_content = response.content

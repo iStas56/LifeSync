@@ -15,7 +15,7 @@ async def rates_page(source):
     keyboard = get_rates_keyboard(user_id)
 
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://0.0.0.0:8000/rates/")
+        response = await client.get(f"http://web:8000/rates/")
         if response.status_code == 200:
             last_update = response.json()['last_update']
             last_update_datetime = datetime.strptime(last_update, "%Y-%m-%d %H:%M:%S")
@@ -33,7 +33,7 @@ async def rates_page(source):
 async def update_rates(callback_query: CallbackQuery, state: FSMContext):
     user_id = callback_query.from_user.id
     async with httpx.AsyncClient() as client:
-        response = await client.get(f"http://0.0.0.0:8000/rates/update-rates")
+        response = await client.get(f"http://web:8000/rates/update-rates")
         text = "Неудалось обновить курсы"
         if response.status_code == 200:
             text = "Курсы обновлен ✅"
@@ -61,7 +61,6 @@ async def rate_start(callback_query: CallbackQuery, state: FSMContext):
 
 @router.message(StateFilter(ConvertGetting.waiting_for_source))
 async def process_source_sent(message: Message, state: FSMContext):
-    await log_user_action(message, state)
 
     source = message.text.strip()
     if len(message.text.strip()) < 3:
@@ -79,7 +78,6 @@ async def process_source_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(ConvertGetting.waiting_for_target))
 async def process_target_sent(message: Message, state: FSMContext):
-    await log_user_action(message, state)
 
     target = message.text.strip()
     if len(message.text.strip()) < 3:
@@ -97,7 +95,6 @@ async def process_target_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(ConvertGetting.waiting_for_sum))
 async def process_sum_sent(message: types.Message, state: FSMContext):
-    await log_user_action(message, state)
 
     user_id = message.from_user.id
 
@@ -125,6 +122,6 @@ async def process_sum_sent(message: types.Message, state: FSMContext):
 
 async def convert_rate(rate_data):
     async with httpx.AsyncClient() as client:
-        response = await client.post(f"http://0.0.0.0:8000/rates/get-rate", json=rate_data)
+        response = await client.post(f"http://web:8000/rates/get-rate", json=rate_data)
         if response.status_code == 200:
             return response.json()
