@@ -196,7 +196,6 @@ async def receive_measurement_input(message: types.Message, state: FSMContext):
     else:
         user_data = await state.get_data()
         user_data.pop('current_param', None)
-        logger.info(user_data)
         user_id = message.from_user.id
 
         if await add_measurements_param(user_data, user_id):
@@ -243,7 +242,6 @@ async def start_adding_exercise(callback_query: types.CallbackQuery, state: FSMC
 
 @router.message(StateFilter(ExerciseInput.waiting_for_title))
 async def process_title_sent(message: Message, state: FSMContext):
-
     title = message.text.strip()
     if len(message.text.strip()) < 2:
         await message.answer(
@@ -261,7 +259,6 @@ async def process_title_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(ExerciseInput.waiting_for_sets))
 async def process_sets_sent(message: Message, state: FSMContext):
-
     sets = message.text.strip()
     if not sets.isdigit() or int(sets) <= 0:
         await message.answer("⚠️ Количество подходов должно быть выше ноля. Пожалуйста, попробуйте снова ⚠️")
@@ -278,7 +275,6 @@ async def process_sets_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(ExerciseInput.waiting_for_repetitions))
 async def process_repetitions_sent(message: Message, state: FSMContext):
-
     repetitions = message.text.strip()
     if not repetitions.isdigit() or int(repetitions) <= 0:
         await message.answer("⚠️ Количество повторений должно быть выше ноля. Пожалуйста, попробуйте снова ⚠️")
@@ -310,7 +306,9 @@ async def process_weight_sent(message: types.Message, state: FSMContext):
     await state.update_data(weight=int(weight))
 
     # После ввода веса предлагаем пользователю выбрать дату
-    await message.answer("Выберите дату тренировки:", reply_markup=get_date_keyboard())
+    await message.answer("📅 Выберите дату тренировки 📅\n"
+                         "Если тренировка была сегодня 📆, просто нажмите кнопку 'Сегодня'\n"
+                         "Или введите дату вручную в формате ДД.ММ.ГГГГ 🖊️.", reply_markup=get_date_keyboard())
     await state.set_state(ExerciseInput.waiting_for_date)
 
 
@@ -318,7 +316,7 @@ async def process_weight_sent(message: types.Message, state: FSMContext):
 async def date_today_selected(callback_query: types.CallbackQuery, state: FSMContext):
     formatted_date = datetime.now().strftime("%Y-%m-%dT00:00:00")
     await state.update_data(workout_date=formatted_date)
-    logger.info(await state.get_data())
+    await write_date(formatted_date, state, callback_query)
 
 
 @router.callback_query(lambda c: c.data == "date_input", StateFilter(ExerciseInput.waiting_for_date))
@@ -338,24 +336,32 @@ async def process_date_sent(message: types.Message, state: FSMContext):
         return
 
     formatted_date = workout_date.strftime("%Y-%m-%dT00:00:00")
-    await state.update_data(workout_date=formatted_date)
-    logger.info(await state.get_data())
-    param_data = await state.get_data()
+    await write_date(formatted_date, state, message)
 
-    user_id = message.from_user.id
+
+async def write_date(date, state: FSMContext, obj):
+    await state.update_data(workout_date=date)
+
+    param_data = await state.get_data()
+    user_id = obj.from_user.id
+
     if await add_exercise(param_data, user_id):
-        await message.answer(text='Упражнение добавлено ✅\n\n')
+        response_text = 'Упражнение добавлено ✅\n\n'
     else:
-        await message.answer(text='Произошла ошибка при обновлении параметра ❌\n\n')
+        response_text = 'Произошла ошибка при создании тренировки ❌\n\n'
+
     workouts = get_workouts_keyboard()
 
-    await message.answer(workouts['text'], reply_markup=workouts['keyboard'])
+    if isinstance(obj, types.CallbackQuery):
+        await obj.message.answer(response_text + workouts['text'], reply_markup=workouts['keyboard'])
+    elif isinstance(obj, types.Message):
+        await obj.answer(response_text)
+        await obj.answer(workouts['text'], reply_markup=workouts['keyboard'])
 
     await state.clear()
 
 
 async def add_exercise(data, user_id):
-    logger.info(data)
     async with httpx.AsyncClient() as client:
         response = await client.post(f"http://web:8000/workout/", params={'user_id': user_id},
                                      json=data)
@@ -491,6 +497,3 @@ async def get_workouts_by_filter(user_id, filter, type, obj):
 
             return temp_pdf_path
         return False
-
-
-
