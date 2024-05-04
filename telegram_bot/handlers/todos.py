@@ -3,18 +3,22 @@ import httpx
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from telegram_bot.handlers.handler_dispatcher import process_start_command, extract_source_info, get_cancel_keyboard, \
-    get_back_button
-from aiogram.types import (CallbackQuery, InlineKeyboardButton, InlineKeyboardMarkup, Message)
-from telegram_bot.logger import logger, log_user_action
+from telegram_bot.handlers.handler_dispatcher import get_back_button
+from aiogram.types import (CallbackQuery, Message, InlineKeyboardButton, InlineKeyboardMarkup)
 
 router = Router()
 
 
 @router.callback_query(lambda c: c.data == 'todos')
-async def show_todos(source):
-    user_id, message = await extract_source_info(source)
-    logger.info(user_id)
+async def show_todos(callback_query: types.CallbackQuery):
+    user_id = callback_query.from_user.id
+    task_buttons = await get_todos_by_user(user_id)
+
+    await callback_query.message.answer(task_buttons['text'],
+                                        reply_markup=task_buttons['keyboard'])
+
+
+async def get_todos_by_user(user_id):
     async with httpx.AsyncClient() as client:
         response = await client.get(f"http://web:8000/todos/", params={"user_id": user_id})
         if response.status_code == 200:
@@ -29,14 +33,10 @@ async def show_todos(source):
 
     back_button = get_back_button()
     new_task_button = types.InlineKeyboardButton(text="➕ Новая задача", callback_data="new_todo")
-
     keyboard = types.InlineKeyboardMarkup(inline_keyboard=task_buttons + [[back_button, new_task_button]])
+    text = "━━━━━━━━━━━━━━━━━\n📝 Текущий список задач 📝\n━━━━━━━━━━━━━━━━━"
 
-    if message:
-        text = "📝 Текущий список задач 📝"
-        await message.edit_text(text, reply_markup=keyboard) \
-            if isinstance(source, types.CallbackQuery) \
-            else await message.answer(text, reply_markup=keyboard)
+    return {'keyboard': keyboard, 'text': text}
 
 
 @router.callback_query(lambda c: c.data and c.data.startswith('todo_detail_'))
@@ -90,11 +90,28 @@ class TodoCreation(StatesGroup):
 
 
 # Логика добавления новой задачи
+def get_cancel_todo():
+    cancel_button = InlineKeyboardButton(text="❌ Отменить ❌", callback_data="cancel_task")
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[cancel_button]])
+    return keyboard
+
+
+@router.callback_query(F.data == "cancel_task")
+async def process_cancel(callback_query: CallbackQuery, state: FSMContext):
+    await state.clear()  # Сброс состояния
+    await callback_query.message.edit_text("🚫 Отменено 🚫")
+
+    user_id = callback_query.from_user.id
+    task_buttons = await get_todos_by_user(user_id)
+
+    await callback_query.message.answer(task_buttons['text'], reply_markup=task_buttons['keyboard'])
+
+
 @router.callback_query(lambda c: c.data and c.data.startswith('new_todo'))
 async def new_todo_start(callback_query: CallbackQuery, state: FSMContext):
     await callback_query.message.answer(
         "✏️ Введите название задачи ✏️",
-        reply_markup=get_cancel_keyboard()
+        reply_markup=get_cancel_todo()
     )
     await state.set_state(TodoCreation.waiting_for_title)
 
@@ -110,7 +127,7 @@ async def process_title_sent(message: Message, state: FSMContext):
     await state.update_data(title=title)
     await message.answer(
         "✏️ Введите описание задачи: ✏️",
-        reply_markup=get_cancel_keyboard()
+        reply_markup=get_cancel_todo()
     )
 
     await state.set_state(TodoCreation.waiting_for_description)
@@ -127,7 +144,7 @@ async def process_description_sent(message: Message, state: FSMContext):
     await state.update_data(description=description)
     await message.answer(
         "🔢 Введите приоритет от 1 до 5: 🔢",
-        reply_markup=get_cancel_keyboard()
+        reply_markup=get_cancel_todo()
     )
 
     await state.set_state(TodoCreation.waiting_for_priority)
@@ -157,10 +174,13 @@ async def process_priority_sent(message: types.Message, state: FSMContext):
     # Попытка добавить новую задачу через API
     if await add_new_task(task_data):
         await message.answer(text='Задача добавлена! ✅')
-        await show_todos(message)
     else:
         await message.answer(text='Произошла ошибка при добавлении задачи ❌')
-        await show_todos(message)
+
+    user_id = message.from_user.id
+    task_buttons = await get_todos_by_user(user_id)
+
+    await message.answer(task_buttons['text'], reply_markup=task_buttons['keyboard'])
 
     await state.clear()
 

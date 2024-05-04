@@ -25,7 +25,7 @@ def get_db():
 
 
 db_dependency = Annotated[Session, Depends(get_db)]
-REPEAT_SCHEDULE = [1, 7, 14, 30, 60, 120, 180]
+REPEAT_SCHEDULE = [1, 2, 5, 7, 10, 14, 20, 25, 30, 35, 50, 60, 120, 180]
 
 
 class WordRequest(BaseModel):

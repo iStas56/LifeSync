@@ -34,8 +34,7 @@ param_names = {
 }
 
 
-async def get_body_measurements_buttons(user_id: int) -> Union[
-    dict[str, Union[InlineKeyboardMarkup, str]], InlineKeyboardMarkup]:
+async def get_body_measurements_buttons(user_id: int) -> Union[dict[str, Union[InlineKeyboardMarkup, str]], InlineKeyboardMarkup]:
     async with httpx.AsyncClient() as client:
         response = await client.get(f"http://web:8000/workout/measure", params={"user_id": user_id})
         if response.status_code == 200 and response.json():
@@ -425,7 +424,8 @@ async def filter_workouts(callback_query: types.CallbackQuery, state: FSMContext
         await callback_query.message.answer(prompt_text, reply_markup=keyboard)
     else:
         back_button = types.InlineKeyboardButton(text="🔙 Назад", callback_data="show_exercises")
-        keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+        add_exercise = types.InlineKeyboardButton(text="➕ Добавить тренировку", callback_data="add_exercise")
+        keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[back_button, add_exercise]])
         file = await get_workouts_by_filter(callback_query.from_user.id, filter_type, 'period', callback_query)
         if file:
             await callback_query.bot.send_document(callback_query.from_user.id, FSInputFile(file))

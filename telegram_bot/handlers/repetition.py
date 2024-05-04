@@ -1,5 +1,7 @@
 import httpx
+from aiogram import F
 from aiogram.filters import StateFilter
+from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from telegram_bot.handlers.handler_dispatcher import *
 from telegram_bot.logger import logger, log_user_action
@@ -9,18 +11,12 @@ word_storage = {}
 
 
 @router.callback_query(lambda c: c.data == 'words')
-async def words_page(source):
-    user_id, message = await extract_source_info(source)
-
+async def words_page(callback_query: types.CallbackQuery):
     # Добавляем кнопки действий в отдельный ряд
     keyboard = get_repetition_keyboard()
 
-    if message:
-        text = ("━━━━━━━━━━━━━━━━━\n 📚 Интервальное повторение слов 📚\n━━━━━━━━━━━━━━━━━━━\n➡️ "
-                "Выберите действие:")
-        await message.edit_text(text, reply_markup=keyboard) \
-            if isinstance(source, types.CallbackQuery) \
-            else await message.answer(text, reply_markup=keyboard)
+    await callback_query.message.answer("━━━━━━━━━━━━━━━━━\n 📚 Интервальное повторение слов 📚\n━━━━━━━━━━━━━━━━━",
+                                        reply_markup=keyboard)
 
 
 @router.callback_query(lambda c: c.data == 'repeat_word')
@@ -32,18 +28,18 @@ async def get_word(callback_query: types.CallbackQuery):
             if data['success']:
                 word_storage[callback_query.from_user.id] = data
 
-                next_word_button = types.InlineKeyboardButton(text="➡️ Следующее", callback_data="repeat_word")
+                next_word_button = types.InlineKeyboardButton(text="Следующее ➡️", callback_data="repeat_word")
                 translate_button = types.InlineKeyboardButton(text="👁 Перевод", callback_data="show_translation")
                 back_button = types.InlineKeyboardButton(text="🔙 Назад", callback_data="words")
 
                 keyboard = types.InlineKeyboardMarkup(
-                    inline_keyboard=[[next_word_button, translate_button], [back_button]])
+                    inline_keyboard=[[translate_button, next_word_button], [back_button]])
 
-                await callback_query.message.edit_text(text=f"🇬🇧 {data['word']}", reply_markup=keyboard)
+                await callback_query.message.answer(text=f"🇬🇧 {data['word']}", reply_markup=keyboard)
             else:
                 await callback_query.message.answer(
                     f"🚫 {data['message']} 🚫 \nКажется, на сегодня все задания выполнены! 🎉")
-                await words_page(callback_query.message)
+                await words_page(callback_query)
         await callback_query.answer()
 
 
@@ -51,9 +47,9 @@ async def get_word(callback_query: types.CallbackQuery):
 async def show_translation(callback_query: types.CallbackQuery):
     data = word_storage.get(callback_query.from_user.id, {})
     if data:
-        next_word_button = types.InlineKeyboardButton(text="Следующее", callback_data="repeat_word")
+        next_word_button = types.InlineKeyboardButton(text="Следующее ➡️", callback_data="repeat_word")
         back_button = types.InlineKeyboardButton(text="🔙 Назад", callback_data="words")
-        keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[next_word_button, back_button]])
+        keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[back_button, next_word_button]])
         await callback_query.message.edit_text(f"🇬🇧 {data['word']}\n🇷🇺 {data['translation']}", reply_markup=keyboard)
     else:
         await callback_query.message.edit_text("Извините, произошла ошибка.")
@@ -65,28 +61,42 @@ class WordCreation(StatesGroup):
     waiting_for_translate = State()
 
 
+@router.callback_query(F.data == "cancel_input")
+async def process_cancel(callback_query: CallbackQuery, state: FSMContext):
+    await state.clear()  # Сброс состояния
+    keyboard = get_repetition_keyboard()
+
+    await callback_query.message.answer("🚫 Отменено 🚫",
+                                        reply_markup=keyboard)
+
+
 # Логика добавления слова
 @router.callback_query(lambda c: c.data == 'new_word')
 async def new_word_start(callback_query: CallbackQuery, state: FSMContext):
+    cancel_button = InlineKeyboardButton(text="❌ Отменить ❌", callback_data="cancel_input")
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[cancel_button]])
+
     await callback_query.message.answer(
         "🇬🇧 Введите слово на английском ✏️",
-        reply_markup=get_cancel_keyboard()
+        reply_markup=keyboard
     )
     await state.set_state(WordCreation.waiting_for_word)
 
 
 @router.message(StateFilter(WordCreation.waiting_for_word))
 async def process_word_sent(message: Message, state: FSMContext):
-
     word = message.text.strip()
     if len(message.text.strip()) < 2:
         await message.answer("⚠️ Слово должно содержать минимум 2 символа. Пожалуйста, попробуйте снова ⚠️")
         return
 
+    cancel_button = InlineKeyboardButton(text="❌ Отменить ❌", callback_data="cancel_input")
+    keyboard = InlineKeyboardMarkup(inline_keyboard=[[cancel_button]])
+
     await state.update_data(word=word)
     await message.answer(
         "🇷🇺 Введите перевод: ✏️",
-        reply_markup=get_cancel_keyboard()
+        reply_markup=keyboard
     )
 
     await state.set_state(WordCreation.waiting_for_translate)
@@ -94,7 +104,6 @@ async def process_word_sent(message: Message, state: FSMContext):
 
 @router.message(StateFilter(WordCreation.waiting_for_translate))
 async def process_translate_sent(message: types.Message, state: FSMContext):
-
     translate = message.text.strip()
     if len(message.text.strip()) < 2:
         await message.answer("⚠️ Перевод должен содержать минимум 2 символа. Пожалуйста, попробуйте снова ⚠️")

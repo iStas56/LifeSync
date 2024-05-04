@@ -1,11 +1,9 @@
-from aiogram import types, Router, F
-from aiogram.filters import Command, CommandStart
-from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup, \
+from aiogram import types, Router
+from aiogram.filters import CommandStart
+from aiogram.types import Message, InlineKeyboardButton, InlineKeyboardMarkup, \
     CallbackQuery
 import os
 from dotenv import load_dotenv
-from telegram_bot.logger import logger
 
 load_dotenv()
 
@@ -75,29 +73,3 @@ def get_workouts_keyboard():
 def get_back_button():
     return types.InlineKeyboardButton(text="🔙 Назад", callback_data="start")
 
-
-def get_cancel_keyboard():
-    cancel_button = InlineKeyboardButton(text="❌ Отменить ❌", callback_data="cancel")
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[[cancel_button]])
-    return keyboard
-
-
-@router.callback_query(F.data == "cancel")
-async def process_cancel(callback_query: CallbackQuery, state: FSMContext):
-    await state.clear()  # Сброс состояния
-    await callback_query.message.edit_text("🚫 Отменено 🚫")
-    await callback_query.answer()
-
-
-async def extract_source_info(source):
-    if isinstance(source, types.CallbackQuery):
-        user_id = source.from_user.id
-        message = source.message
-        await source.answer()
-    elif isinstance(source, types.Message):
-        user_id = source.from_user.id
-        message = source
-    else:
-        user_id = None
-        message = None
-    return user_id, message
