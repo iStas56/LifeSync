@@ -297,12 +297,14 @@ def get_date_keyboard():
 
 @router.message(StateFilter(ExerciseInput.waiting_for_weight))
 async def process_weight_sent(message: types.Message, state: FSMContext):
-    weight = message.text.strip()
-    if not weight.isdigit() or not int(weight) >= 0:
-        await message.answer("⚠️ Значение должно быть выше 0. Попробуйте ещё раз ⚠️")
+    weight = message.text.strip().replace(',', '.')
+    try:
+        weight_float = float(weight)
+    except ValueError:
+        await message.answer("⚠️ Значение должно быть числовым. Попробуйте ещё раз ⚠️")
         return
 
-    await state.update_data(weight=int(weight))
+    await state.update_data(weight=weight_float)
 
     # После ввода веса предлагаем пользователю выбрать дату
     await message.answer("📅 Выберите дату тренировки 📅\n"

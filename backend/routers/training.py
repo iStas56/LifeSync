@@ -45,7 +45,7 @@ class WorkoutRecordRequest(BaseModel):
     exercise_name: str = Field(min_length=2)
     sets: int = Field(gt=0)
     repetitions: int = Field(gt=0)
-    weight: int = Field(ge=0)
+    weight: float = Field(ge=0)
     workout_date: datetime
 
 

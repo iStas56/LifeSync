@@ -46,7 +46,7 @@ class WorkoutRecord(Base):
     exercise_name = Column(String, nullable=False)
     sets = Column(Integer, nullable=False)
     repetitions = Column(Integer, nullable=False)
-    weight = Column(Integer, nullable=True)
+    weight = Column(Float, nullable=True)
     workout_date = Column(DateTime)
 
 
