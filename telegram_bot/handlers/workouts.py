@@ -461,7 +461,8 @@ async def receive_filter_input(message: types.Message, state: FSMContext):
         await state.update_data(target=input_name)
 
     back_button = types.InlineKeyboardButton(text="🔙 Назад", callback_data="show_exercises")
-    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[back_button]])
+    add_exercise = types.InlineKeyboardButton(text="➕ Добавить тренировку", callback_data="add_exercise")
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=[[back_button, add_exercise]])
     data = await state.get_data()
     file = await get_workouts_by_filter(message.from_user.id, data['target'], filter_type, message)
 
